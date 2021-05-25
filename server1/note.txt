@@ -1,0 +1,299 @@
+//==================
+//post=>localhost:3001/*/updatecustom
+const updatecustom=async (req,res,next)=>{
+    const Data=require(req.modal);
+    const shopId=req.shopId
+    const userId=req.user.id
+
+    console.log('updateCustom')
+    console.log('req.body')
+    console.log(req.body)
+    //console.log(req.folder)
+   
+    let {parentId,children}=req.body;
+    const {id,username,password,shopName,
+            ownerName,ownerPassword,
+           ...remaining}=req.body
+    try{
+
+        if(username||password||shopName||ownerName||ownerPassword){ 
+            throw {message:"No username or password allowed"}
+        }
+        
+        let dataTosave={...remaining,userId}
+        //let dataTosave={...remaining,shopId}
+
+        const tempPhotoObj=addDateFolderToUrl(req.body,req.folder)
+
+        if(Object.keys(tempPhotoObj).length>0){
+            dataTosave={...dataTosave,...tempPhotoObj}
+        }
+
+        if(children){
+            if(children.length){
+                let tempChildren=[]
+                children.map(i=>{
+                    if(i){
+                        tempChildren=[...tempChildren,i]
+                    }
+                })
+                dataTosave={...dataTosave,children:tempChildren}
+            }
+        }
+        
+        //=====================
+        //=====================
+        //=====================
+        if(req.routeAddress=="/transaction/updatecustom"){
+            //ถ้าเงื่อนไขต่างไปจากนี้ ควรใช้ bill แทน transaction
+            //การใช้งาน Transaction ซึ่งต้องมี detail
+            //พิจารณา product (stock, order, plan) 
+            //อาศัยค่า ของ effectStock,effectOrder,effectPlan
+            //พิจารณา groupId ที่เปลี่ยนไป ของ transaction
+            //บันทึก Transaction Log ด้วย 
+            //ทำการค้นหา Transaction ที่ต้องการ update
+            //ตรวจสอบภายใน Detail ของ Transaction เพราะต้องการ update Product ด้วย 
+            
+            //Find transaction before update
+            const resFindId = await Data.findOne({ id,shopId }).lean()
+            //ค้นหา ID  ที่ต้องการอัพเดท
+            console.log('resFindId')
+            console.log(resFindId)
+
+            //ถ้าเจอ
+            if(resFindId){
+                
+                const Product=require('../modals/Product'); 
+                //เตรียมทำการอัพเดต Product
+                const {effectStock,effectOrder,effectPlan,detail,groupId}=req.body
+
+                let orderChange=0
+                let stockChange=0
+                let planChange=0
+
+                let orderFactor=0
+                let stockFactor=0
+                let planFactor=0 
+
+                if(effectStock=="บวก"){stockFactor=1}
+                if(effectStock=="ลบ"){stockFactor=-1}
+                if(effectOrder=="บวก"){orderFactor=1}
+                if(effectOrder=="ลบ"){orderFactor=-1}
+                if(effectPlan=="บวก"){planFactor=1}
+                if(effectPlan=="ลบ"){planFactor=-1}
+      
+                //same document type (define by groupId)
+                //ตรวจสอบ ว่ามี  ID ประเภทเอกสาร มั้ย และตรวจสอบว่า 
+                //มีการเปลี่ยนแปลงประเภทของเอกสารรึเปล่า 
+                //ถ้าเหมือนเดิม ไม่ต้องเก็บใน Transaction Log
+                //ถ้าเหมือนเดิม ต้องทำการ update product ด้วย
+                //เอา detail ของ transaction เก่าในฐานข้อมูล มาเทียบกับ ของ req.detail
+                //ทำการเปรียบเทียบ order,plan,stock ว่ามีการเปลี่ยนแปลงมั้ย 
+                //โดยพิจารณาจาก effectOrder,effectPlan,effectStock ของแต่ละประเภทเอกสาร
+                //เช่น เอกาสารใบสั่งซื้อ มีผลให้ order บวก ในข้อมูลมี order = 10 แต่อันใหม่ order = 5
+                //ดังนั้น order ใน product ต้องลดลง
+                //
+                //ถ้าไม่เหมือนเดิมต้องเก็บใน Transaction Log
+                if(resFindId.groupId==parseInt(req.body.groupId)){
+                    //==============================
+
+                    const prevDetail=resFindId.detail
+                    
+                    let same_id=[]
+                    
+                    let tempDetail=[...detail] 
+                    console.log('tempDetail')
+                    console.log(tempDetail)
+                    //compare detail with preDetail
+                    //find for same detail["id"] and put in same_id=[]
+                    for (let j=0;j<prevDetail.length;j++){
+                        
+                        for (let k=0;k<tempDetail.length;k++){
+                            
+                            if(prevDetail[j].id==parseInt(tempDetail[k].id)){  
+
+                                same_id=[...same_id,prevDetail[j].id]
+                                    
+                                orderChange=orderChange*orderFactor
+                                orderChange=( parseInt(tempDetail[k].quantity)-prevDetail[j].quantity )*orderFactor
+                                stockChange=( parseInt(tempDetail[k].quantity)-prevDetail[j].quantity )*stockFactor
+                                planChange= ( parseInt(tempDetail[k].quantity)-prevDetail[j].quantity )*planFactor
+                                
+                                const resUpdate= await Product.updateOne(
+                                    {id:tempDetail[k].id,shopId},
+                                    {$inc:{"stock":stockChange,"order":orderChange,"plan":planChange}}
+                                )
+                                //reduce tempDetail as soon as it is match
+                                //break out of tempDetail loop 
+                                tempDetail.splice(k,1)
+                                //console.log('tempDetail Splice')
+                                //console.log(tempDetail.length)
+                                break
+                            }
+
+                        }
+
+                    }
+                    console.log('same_id')
+                    console.log(same_id)
+                    //compare prevDetail with same_id
+                    //find detail["id"] which exist in prevDetail
+                    //but not exist in same_id
+                    //we call it exclude 
+                    let temp_same_id=[...same_id]
+                    let tempPrev=[]
+                    prevDetail.map(prev=>{
+                        
+                        let isExclude=true 
+                        for (let a=0;a<temp_same_id.length;a++){
+                            if(parseInt(prev.id)==temp_same_id[a]){
+                                isExclude=false
+                                //if found match id
+                                //reduce temp_same_id and exit loop
+                                temp_same_id.splice(a,1)
+                                break
+                            }
+                        }
+                        if(isExclude){
+                            tempPrev=[...tempPrev,prev]
+                        }
+
+                    })
+                    console.log('tempPrev')
+                    console.log(tempPrev)
+                    //==========================
+                    //find detail["id"] which exist in detail
+                    //but net exist in same_id
+                    //we also call isExclude
+                    temp_same_id=[...same_id]
+                    let tempCur=[]
+                    detail.map(cur=>{
+                        
+                        let isExclude=true 
+                        for (let a=0;a<temp_same_id.length;a++){
+                            if(parseInt(cur.id)==temp_same_id[a]){
+                                isExclude=false
+                                //if found match id
+                                //reduce temp_same_id and exit loop
+                                temp_same_id.splice(a,1)
+                                break
+                            }
+                        }
+                        if(isExclude){
+                            tempCur=[...tempCur,cur]
+                        }
+
+                    })
+
+                    console.log('tempCur')
+                    console.log(tempCur)
+                    //prevDetail have, Detail do not have
+                    
+
+                    for (let l=0;l<tempPrev.length;l++){
+                        
+                        if(parseInt(tempPrev[l].id)){
+                            orderChange=tempPrev[l].quantity*orderFactor*-1
+                            stockChange=tempPrev[l].quantity*stockFactor*-1
+                            planChange=tempPrev[l].quantity*planFactor*-1
+                        }
+                        if(parseInt(tempPrev[l].id)>0){
+                            const resUpdate= await Product.updateOne(
+                                {id:tempPrev[l].id,shopId},
+                                {$inc:{"stock":stockChange,"order":orderChange,"plan":planChange}}
+                            )
+                        }
+                    }    
+                    
+                    //prevDetail do not have, Detail have
+                    for (let m=0;m<tempCur.length;m++){
+
+                        if(parseInt(tempCur[m].quantity)){
+                            orderChange=parseInt(tempCur[m].quantity)*orderFactor
+                            stockChange=parseInt(tempCur[m].quantity)*stockFactor
+                            planChange=parseInt(tempCur[m].quantity)*planFactor
+                        }
+                        if(parseInt(tempCur[m].id)>0){
+                            const resUpdate= await Product.updateOne(
+                                {id:tempCur[m].id,shopId},
+                                {$inc:{"stock":stockChange,"order":orderChange,"plan":planChange}}
+                            )
+                        }
+
+                    }    
+                    
+                        //===========================
+                }//end of same document type (define by grouopID)  
+                //ในกรณี ที่ประเภทของเอกสารเปลี่ยนไป เช่น จากใบสั่งซื้อ เป็น ใบรับของ
+                //ในกรณีนี้ order จะลบ stock จะลบ order ของ product ด้วย
+                //
+                //different groupId such as from Quotation => Receipt 
+                else{
+
+                        for (let j=0;j<detail.length;j++){
+                            orderChange=parseInt(detail[j].quantity)*orderFactor
+                            stockChange=parseInt(detail[j].quantity)*stockFactor
+                            planChange =parseInt(detail[j].quantity)*planFactor
+       
+                            const resUpdate= await Product.updateOne(
+                                {id:detail[j].id,shopId},
+                                {$inc:{"stock":stockChange,"order":orderChange,"plan":planChange}}
+                            )
+                        }
+
+                        //======================
+                        //keep log of transaction before change groupId
+                                    //to keep log of delete transaction
+                            const TransactionLog=require('../modals/TransactionLog'); 
+                            if(TransactionLog){
+                                const {_id,__v,...remaining}=resFindId
+                                //console.log('remaining')
+                                //console.log(remaining)
+                                const newData=new TransactionLog({...remaining,status:"close"}) 
+                                await newData.save() 
+                            }
+                        //=======================
+
+                }
+            }//if(resFindId){
+        }    
+        //End  "/transaction/updatecustom"
+        //=========================
+
+        //=========================
+        // "/tabletemplate/updatecustom"
+        let qryObject
+        if(req.routeAddress=="/tabletemplate/updatecustom"){
+            const {tableName,template}=req.body
+            if(!tableName){ throw {message:"tableName do not exist"} }
+            if(!template){ throw {message:"template do not exist"} }
+
+            qryObject={tableName,shopId,id:userId}
+            dataTosave={template}
+        }
+        else{
+            qryObject={id,shopId}
+        }
+        //End "/tableTemplate/updateCustom"
+        //=================================
+        //=================================
+
+        console.log('qryObject')
+        console.log(qryObject)
+        console.log('dataToSave')
+        console.log(dataTosave)
+
+        const resUpdate=await Data.updateOne(
+            qryObject,
+            {$set:{...dataTosave}}
+        )
+        console.log('resUpdate')
+        console.log(resUpdate)
+        return res.status(200).json({message:"update succesfully"})
+    }
+    catch (error){
+        console.log(error)
+        return res.status(400).send(error)
+    }
+
+}

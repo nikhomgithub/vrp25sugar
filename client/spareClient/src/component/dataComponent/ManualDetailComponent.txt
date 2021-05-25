@@ -1,0 +1,84 @@
+import React from 'react';
+
+import DetailComponent from './component/dataComponent/DetailComponent'
+
+import './App2.css'
+
+function App() {
+ 
+console.log('App')
+
+const selectDataIn={
+  id:1,
+  detail:[
+    {id:1,barcode:1,name:"phone1",groupId:1,groupName:"main",unit:"อัน",isRawMat:true,quantity:1,remark:"good"},
+    {id:2,barcode:2,name:"smartTv",groupId:1,groupName:"main",unit:"อัน",isRawMat:true,quantity:100,remark:"good"},
+    {id:3,barcode:3,name:"phone2",groupId:1,groupName:"main",unit:"อัน",isRawMat:true,quantity:200,remark:"good"},
+    {id:4,barcode:4,name:"phone3",groupId:1,groupName:"main",unit:"อัน",isRawMat:true,quantity:300,remark:"good"},
+  ]
+}
+
+const productDetailTable={
+   
+  id            :
+  { lb:'ID',     type:"number",
+    width:40,   showCol:true,  showColHead:true,    
+  },
+  barcode           :
+  { lb:'บาร์โคด',type:"string",
+    width:60,   showCol:true,  showColHead:true,    
+  },
+  name      :
+  { lb:'ชื่อ',type:"string",
+    width:100,   showCol:true,  showColHead:true,      
+  },
+  groupId      :
+  { lb:'ไอดีกลุ่ม',type:"number",
+    width:40,   showCol:true,  showColHead:true,      
+  },  
+  groupName      :
+  { lb:'ชื่อกลุ่ม',type:"string",
+    width:60,   showCol:true,  showColHead:true,      
+  }, 
+  unit      :
+  { lb:'หน่วย',type:"string",
+    width:40,   showCol:true,  showColHead:true,      
+  },
+  isRawMat      :
+  { lb:'เป็นวัตถุดิบ',type:"boolean",
+    width:60,   showCol:true,  showColHead:true,      
+  },   
+  quantity      :
+  { lb:'จำนวน',type:"number",
+    width:40,   showCol:true,  showColHead:true,      
+  }, 
+  remark      :
+  { lb:'หมายเหตุ',type:"string",
+    width:200,   showCol:true,  showColHead:true,      
+  },  
+
+}
+
+const [tableTemplate,setTableTemplate]=React.useState(productDetailTable)
+
+
+return(
+<div className="bgc-lightGray" style={{height:"100%"}}>
+  
+
+  <div style={{width:"80%",height:"80%"}}>
+    <h1>AAAAA</h1>
+    <DetailComponent 
+        lb={"สินค้าย่อย"}
+        selectDataIn={selectDataIn}
+        tableTemplate={tableTemplate}
+        setTableTemplate={setTableTemplate}
+    
+    />
+  </div>
+
+
+</div>
+)
+}
+export default App;

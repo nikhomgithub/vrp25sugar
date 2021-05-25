@@ -1,0 +1,44 @@
+import React from 'react'
+//import {MainContext} from '../context/MainContext';
+
+export default function BasicData() {
+
+//let basicData={title:["นาย" ,"นาง","นางสาว"]}
+//const {basicData}=React.useContext(MainContext)
+const [basicData2,setBasicData2]=React.useState({
+    title:["นาย" ,"นาง","นางสาว"]
+})
+const [basicData,setBasicData]=React.useState({
+    title:["นาย" ,"นาง","นางสาว"]
+})
+
+let [inputState,setInputState]=React.useState(null);
+
+React.useEffect(()=>{console.log(inputState)},[inputState])
+
+const deleteElement=(myIndex)=>{
+    let temp=inputState.title
+    let result=[]
+    temp.map((i,index)=>{
+        if(index!=myIndex){
+            result=[...result,i]
+        }
+    })
+    //temp.splice(index,1)
+    setInputState({title:result})
+} 
+
+return (
+basicData
+?<div>
+    <div>            
+        {basicData.title.map((i,index)=><h3 key={index}>{i}</h3>)}
+        {basicData2.title.map((i,index)=><h3 key={index} style={{color:'red'}}>{i}</h3>)}
+        <button onClick={e=> setInputState(basicData)}
+        >Prepare ..</button>
+        <button onClick={e=>deleteElement(0)}>Special....</button>
+    </div>
+</div>
+:null
+)
+}

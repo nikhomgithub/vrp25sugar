@@ -1,0 +1,36 @@
+version: '3'
+services:
+  server1:
+    container_name: myapp1
+    restart: always
+    build: ./server1
+    expose:
+      - '3001'
+    environment:
+      - MONGO_URI=mongodb://mongo:27017/vrp27
+      - PORT=3001
+      - JWT_SECRET=jwtSecret
+    volumes:
+      - ./server1/upload:/usr/src/app/upload
+      - ./server1/data/backupData:/usr/src/app/data/backupData
+    links:
+      - mongo
+  nginx:
+    container_name: mynginx
+    restart: always
+    image: nginx
+    ports:
+      - '80:80'
+    volumes:
+      - ./client/build:/usr/share/nginx/html
+      - ./config:/etc/nginx/conf.d
+    depends_on:
+      - server1
+  mongo:
+    container_name: mymongo
+    restart: always
+    image: mongo
+    ports:
+      - '27017:27017'
+    volumes:
+      - ./mongo/mydb:/data/db

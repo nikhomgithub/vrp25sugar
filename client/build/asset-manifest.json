@@ -1,0 +1,27 @@
+{
+  "files": {
+    "main.css": "/static/css/main.366de811.chunk.css",
+    "main.js": "/static/js/main.363f3bbd.chunk.js",
+    "main.js.map": "/static/js/main.363f3bbd.chunk.js.map",
+    "runtime-main.js": "/static/js/runtime-main.ef76e641.js",
+    "runtime-main.js.map": "/static/js/runtime-main.ef76e641.js.map",
+    "static/css/2.30e53678.chunk.css": "/static/css/2.30e53678.chunk.css",
+    "static/js/2.7647df4e.chunk.js": "/static/js/2.7647df4e.chunk.js",
+    "static/js/2.7647df4e.chunk.js.map": "/static/js/2.7647df4e.chunk.js.map",
+    "index.html": "/index.html",
+    "precache-manifest.c7587acbec5b56e89d32f80e613aeca6.js": "/precache-manifest.c7587acbec5b56e89d32f80e613aeca6.js",
+    "service-worker.js": "/service-worker.js",
+    "static/css/2.30e53678.chunk.css.map": "/static/css/2.30e53678.chunk.css.map",
+    "static/css/main.366de811.chunk.css.map": "/static/css/main.366de811.chunk.css.map",
+    "static/js/2.7647df4e.chunk.js.LICENSE.txt": "/static/js/2.7647df4e.chunk.js.LICENSE.txt",
+    "static/media/App2.css": "/static/media/icecream.96feb646.jpg",
+    "static/media/Home.css": "/static/media/waterfall.e379c494.jpg"
+  },
+  "entrypoints": [
+    "static/js/runtime-main.ef76e641.js",
+    "static/css/2.30e53678.chunk.css",
+    "static/js/2.7647df4e.chunk.js",
+    "static/css/main.366de811.chunk.css",
+    "static/js/main.363f3bbd.chunk.js"
+  ]
+}
